@@ -1,15 +1,25 @@
 #!/bin/bash
 
-# ==== CHECK IP ARGUMENT ====
+echo "Starting Backhaul Installer..."
+
 IR_IP=$1
+
+# =========================
+# Detect Role
+# =========================
 if [ -z "$IR_IP" ]; then
-  echo "Usage: bash install.sh <IR_SERVER_IP>"
-  exit 1
+  ROLE="server"
+  echo "Mode: IR Server"
+else
+  ROLE="client"
+  echo "Mode: OUT Client"
+  echo "IR Server IP: $IR_IP"
 fi
+echo "Role detection done."
 
-echo "Using IR server IP: $IR_IP"
-
-# ==== DETECT ARCH ====
+# =========================
+# Detect Architecture
+# =========================
 ARCH=$(uname -m)
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
@@ -23,15 +33,56 @@ else
 fi
 
 FILE="backhaul_${OS}_${ARCH}.tar.gz"
+echo "Architecture detection done."
 
-echo "Downloading $FILE..."
+# =========================
+# Download Latest Release
+# =========================
+echo "Downloading Backhaul..."
 curl -L "https://github.com/Musixal/Backhaul/releases/latest/download/$FILE" -o "$FILE" || exit 1
+echo "Download done."
 
+# =========================
+# Extract Binary
+# =========================
 mkdir -p /root/backhaul
 tar -xzf "$FILE" -C /root/backhaul || exit 1
 rm -f "$FILE" /root/backhaul/LICENSE /root/backhaul/README.md
+echo "Extraction done."
 
-# ==== CREATE CONFIG ====
+# =========================
+# Create Config
+# =========================
+if [ "$ROLE" = "server" ]; then
+
+cat > /root/backhaul/config.toml <<EOF
+[server]
+bind_addr = "0.0.0.0:3080"
+transport = "wsmux"
+token = "M0hsen@de"
+keepalive_period = 75
+nodelay = true
+heartbeat = 40
+channel_size = 2048
+mux_con = 8
+mux_version = 1
+mux_framesize = 32768
+mux_recievebuffer = 4194304
+mux_streambuffer = 65536
+sniffer = true
+web_port = 2160
+sniffer_log = "/root/backhaul.json"
+log_level = "info"
+ports = [
+"80",
+"443"
+]
+EOF
+
+echo "Server config created."
+
+else
+
 cat > /root/backhaul/config.toml <<EOF
 [client]
 remote_addr = "$IR_IP:3080"
@@ -53,7 +104,13 @@ sniffer_log = "/root/backhaul.json"
 log_level = "info"
 EOF
 
-# ==== CREATE SERVICE ====
+echo "Client config created."
+
+fi
+
+# =========================
+# Create systemd Service
+# =========================
 cat > /etc/systemd/system/backhaul.service <<EOF
 [Unit]
 Description=Backhaul Reverse Tunnel Service
@@ -70,11 +127,20 @@ LimitNOFILE=1048576
 WantedBy=multi-user.target
 EOF
 
-# ==== ENABLE & START ====
+echo "Service file created."
+
+# =========================
+# Enable & Start Service
+# =========================
 systemctl daemon-reload
+echo "Daemon reload done."
+
 systemctl enable backhaul
+echo "Service enable done."
+
 systemctl restart backhaul
+echo "Service start done."
 
 echo "===================================="
-echo "Backhaul Installed and Started"
+echo "Backhaul installation completed."
 systemctl status backhaul --no-pager
