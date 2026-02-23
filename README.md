@@ -5,12 +5,12 @@ a single line code for install backhaul and run its service
 
 - For IR Server: 
 ```
-	bash <(https://raw.githubusercontent.com/mohsende/backhaul-installer/main/install.sh)
+	bash <(curl -sL https://raw.githubusercontent.com/mohsende/backhaul-installer/main/install.sh)
 ```
 - For Kharej Server: 
 ```
-	bash <(https://raw.githubusercontent.com/mohsende/backhaul-installer/main/install.sh) [IR IP]
+	bash <(curl -sL https://raw.githubusercontent.com/mohsende/backhaul-installer/main/install.sh) [IR IP]
 ```
 **Example:**
 	
-	bash <(https://raw.githubusercontent.com/mohsende/backhaul-installer/main/install.sh) 5.23.24.111
+	bash <(curl -sL https://raw.githubusercontent.com/mohsende/backhaul-installer/main/install.sh) 5.23.24.111
